@@ -1,0 +1,40 @@
+name: Publish founder brief
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check site contents
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          h = Path('index.html').read_text()
+          assert Path('style.css').exists()
+          assert Path('assets/felipe.jpg').stat().st_size > 2000
+          assert 'thejagger' not in h.lower()
+          for s in ['id="thinking"', 'id="example"', 'id="me"', 'id="hello"']:
+              assert s in h, s
+          print("Content, photo and links to sections present")
+          PY
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
